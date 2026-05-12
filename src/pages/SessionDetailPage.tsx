@@ -84,11 +84,13 @@ export default function SessionDetailPage() {
     try {
       const res = await sessionApi.generatePdf(session._id)
       const data = res.data.data as any
-      // relativePdfUrl = "/uploads/filename.pdf" — proxied by Vite in dev
-      const relative: string = data.relativePdfUrl ?? data.pdfUrl ?? ''
+      // Always build an absolute URL pointing to the backend server
+      const BACKEND = (import.meta.env.VITE_API_URL || 'https://medlab-backend.fly.dev/api')
+        .replace(/\/api$/, '')
+      const relative: string = data.relativePdfUrl ?? ''
       const url = relative.startsWith('/uploads/')
-        ? relative          // Vite proxies this to backend
-        : data.pdfUrl ?? '' // Absolute URL from prod server
+        ? `${BACKEND}${relative}`   // e.g. https://medlab-backend.fly.dev/uploads/xxx.pdf
+        : data.pdfUrl ?? ''         // already absolute URL from backend
       if (url) window.open(url, '_blank')
       toast.success('PDF generated!')
       load()
