@@ -51,5 +51,5 @@ export const sessionApi = {
   updateTest:   (id: string, testId: string, data: any) => api.put<ApiResponse<TestSession>>(`/sessions/${id}/tests/${testId}`, data),
   addResult:    (id: string, data: any) => api.post<ApiResponse<TestSession>>(`/sessions/${id}/results`, data),
   updateStatus: (id: string, status: string) => api.put<ApiResponse<TestSession>>(`/sessions/${id}/status`, { status }),
-  generatePdf:  (id: string)   => api.post<ApiResponse<{ pdfUrl: string }>>(`/sessions/${id}/pdf`),
+  generatePdf:  (id: string)   => api.post(`/sessions/${id}/pdf`, {}, { responseType: 'blob' }),
 }

@@ -83,15 +83,12 @@ export default function SessionDetailPage() {
     setGenPdf(true)
     try {
       const res = await sessionApi.generatePdf(session._id)
-      const data = res.data.data as any
-      // Always build an absolute URL pointing to the backend server
-      const BACKEND = (import.meta.env.VITE_API_URL || 'https://medlab-backend.fly.dev/api')
-        .replace(/\/api$/, '')
-      const relative: string = data.relativePdfUrl ?? ''
-      const url = relative.startsWith('/uploads/')
-        ? `${BACKEND}${relative}`   // e.g. https://medlab-backend.fly.dev/uploads/xxx.pdf
-        : data.pdfUrl ?? ''         // already absolute URL from backend
-      if (url) window.open(url, '_blank')
+      // Backend now streams the PDF directly — open it as a blob URL
+      const blob = new Blob([res.data], { type: 'application/pdf' })
+      const url  = URL.createObjectURL(blob)
+      window.open(url, '_blank')
+      // Revoke after a short delay to free memory
+      setTimeout(() => URL.revokeObjectURL(url), 60000)
       toast.success('PDF generated!')
       load()
     } catch {
