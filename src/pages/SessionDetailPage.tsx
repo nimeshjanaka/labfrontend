@@ -83,15 +83,25 @@ export default function SessionDetailPage() {
     setGenPdf(true)
     try {
       const res = await sessionApi.generatePdf(session._id)
-      // Backend now streams the PDF directly — open it as a blob URL
-      const blob = new Blob([res.data], { type: 'application/pdf' })
+
+      // If backend returned an error (not a PDF), read and show it
+      const contentType = (res.headers?.['content-type'] as string) ?? ''
+      if (!contentType.includes('application/pdf')) {
+        const text = await new Blob([res.data as BlobPart]).text()
+        console.error('PDF generation error from backend:', text)
+        toast.error('Failed to generate PDF')
+        return
+      }
+
+      // Stream PDF bytes → blob URL → open in new tab
+      const blob = new Blob([res.data as BlobPart], { type: 'application/pdf' })
       const url  = URL.createObjectURL(blob)
       window.open(url, '_blank')
-      // Revoke after a short delay to free memory
-      setTimeout(() => URL.revokeObjectURL(url), 60000)
+      setTimeout(() => URL.revokeObjectURL(url), 60_000)
       toast.success('PDF generated!')
       load()
-    } catch {
+    } catch (err) {
+      console.error('generatePdf error:', err)
       toast.error('Failed to generate PDF')
     } finally {
       setGenPdf(false)
