@@ -47,12 +47,13 @@ export default function AddPatientModal({ open, onClose, onSaved, patient }: Pro
 
   const onSubmit = async (data: FormData) => {
     setLoading(true)
+    const payload = { ...data, gender: data.gender as Patient['gender'] }
     try {
       if (isEdit && patient) {
-        await patientApi.update(patient._id, data)
+        await patientApi.update(patient._id, payload)
         toast.success('Patient updated successfully')
       } else {
-        await patientApi.create(data)
+        await patientApi.create(payload)
         toast.success('Patient added successfully')
       }
       onSaved()

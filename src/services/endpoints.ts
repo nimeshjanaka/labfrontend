@@ -19,8 +19,8 @@ export const authApi = {
 
 // ── Patients ──────────────────────────────────────────────────────────────────
 export const patientApi = {
-  getAll:        (params?: { search?: string; page?: number; limit?: number }) =>
-                   api.get<ApiResponse<{ patients: Patient[]; total: number; page: number; pages: number }>>('/patients', { params }),
+  getAll:        (params?: { query?: string; page?: number; limit?: number }) =>
+                   api.get<ApiResponse<{ data: Patient[]; total: number; page: number; totalPages: number }>>('/patients', { params }),
   getById:       (id: string) => api.get<ApiResponse<Patient>>(`/patients/${id}`),
   create:        (data: Partial<Patient>) => api.post<ApiResponse<Patient>>('/patients', data),
   update:        (id: string, data: Partial<Patient>) => api.put<ApiResponse<Patient>>(`/patients/${id}`, data),
@@ -45,7 +45,7 @@ export const labTestApi = {
 // ── Sessions ──────────────────────────────────────────────────────────────────
 export const sessionApi = {
   getAll:       (params?: { status?: string; patientId?: string; page?: number; limit?: number }) =>
-                  api.get<ApiResponse<{ sessions: TestSession[]; total: number; page: number; pages: number }>>('/sessions', { params }),
+                  api.get<ApiResponse<{ data: TestSession[]; total: number; page: number; totalPages: number }>>('/sessions', { params }),
   getById:      (id: string) => api.get<ApiResponse<TestSession>>(`/sessions/${id}`),
   create:       (data: any)  => api.post<ApiResponse<TestSession>>('/sessions', data),
   addTests:     (id: string, data: any) => api.post<ApiResponse<TestSession>>(`/sessions/${id}/tests`, data),
