@@ -42,13 +42,13 @@ import EnterResultModal from '../components/session/EnterResultModal'
 
 export default function SessionDetailPage() {
   const { id } = useParams<{ id: string }>()
-  const [session, setSession]         = useState<TestSession | null>(null)
-  const [loading, setLoading]         = useState(true)
+  const [session, setSession]           = useState<TestSession | null>(null)
+  const [loading, setLoading]           = useState(true)
   const [showAddTests, setShowAddTests] = useState(false)
-  const [resultTest, setResultTest]   = useState<SessionTest | null>(null)
+  const [resultTest, setResultTest]     = useState<SessionTest | null>(null)
   const [removeTestId, setRemoveTestId] = useState<string | null>(null)
-  const [removing, setRemoving]       = useState(false)
-  const [genPdf, setGenPdf]           = useState(false)
+  const [removing, setRemoving]         = useState(false)
+  const [genPdf, setGenPdf]             = useState(false)
 
   const load = async () => {
     try {
@@ -83,21 +83,31 @@ export default function SessionDetailPage() {
     setGenPdf(true)
     try {
       const res = await sessionApi.generatePdf(session._id)
-
-      // If backend returned an error (not a PDF), read and show it
       const contentType = (res.headers?.['content-type'] as string) ?? ''
-      if (!contentType.includes('application/pdf')) {
-        const text = await new Blob([res.data as BlobPart]).text()
-        console.error('PDF generation error from backend:', text)
-        toast.error('Failed to generate PDF')
-        return
+
+      if (contentType.includes('application/pdf')) {
+        // ✅ New backend: streams PDF bytes directly
+        const blob = new Blob([res.data as BlobPart], { type: 'application/pdf' })
+        const url  = URL.createObjectURL(blob)
+        window.open(url, '_blank')
+        setTimeout(() => URL.revokeObjectURL(url), 60_000)
+      } else {
+        // ✅ Old backend: returned JSON with pdfUrl — open it directly
+        let json: any = res.data
+        if (json instanceof Blob) {
+          const text = await (json as Blob).text()
+          json = JSON.parse(text)
+        }
+        const pdfUrl: string = json?.data?.pdfUrl ?? json?.data?.relativePdfUrl ?? ''
+        if (!pdfUrl) throw new Error('No PDF URL returned from backend')
+
+        // If relative path, prepend backend base URL
+        const BACKEND = (import.meta.env.VITE_API_URL as string || 'https://medlab-backend.fly.dev/api')
+          .replace(/\/api$/, '')
+        const finalUrl = pdfUrl.startsWith('http') ? pdfUrl : `${BACKEND}${pdfUrl}`
+        window.open(finalUrl, '_blank')
       }
 
-      // Stream PDF bytes → blob URL → open in new tab
-      const blob = new Blob([res.data as BlobPart], { type: 'application/pdf' })
-      const url  = URL.createObjectURL(blob)
-      window.open(url, '_blank')
-      setTimeout(() => URL.revokeObjectURL(url), 60_000)
       toast.success('PDF generated!')
       load()
     } catch (err) {

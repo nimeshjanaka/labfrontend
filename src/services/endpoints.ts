@@ -1,55 +1,44 @@
 import api from './api'
-import type { Patient, TestSession, LabTest, DashboardStats, PaginatedResult, ApiResponse } from '../types'
-
-// ── Auth ──────────────────────────────────────────────────────────────────────
-export const authApi = {
-  login:          (email: string, password: string) =>
-    api.post<ApiResponse<{ token: string; user: any }>>('/auth/login', { email, password }),
-  register:       (data: any) => api.post('/auth/register', data),
-  forgotPassword: (email: string) => api.post('/auth/forgot-password', { email }),
-  resetPassword:  (token: string, newPassword: string) => api.post('/auth/reset-password', { token, newPassword }),
-  getProfile:     () => api.get('/auth/profile'),
-  changePassword: (oldPassword: string, newPassword: string) =>
-    api.put('/auth/change-password', { oldPassword, newPassword }),
-}
-
-// ── Dashboard ─────────────────────────────────────────────────────────────────
-export const dashboardApi = {
-  getStats:          () => api.get<ApiResponse<DashboardStats>>('/dashboard/stats'),
-  getRecentSessions: () => api.get<ApiResponse<TestSession[]>>('/dashboard/recent-sessions'),
-}
+import type { ApiResponse, Patient, LabTest, TestSession, DashboardStats } from '../types'
 
 // ── Patients ──────────────────────────────────────────────────────────────────
 export const patientApi = {
-  getAll:        (params?: any) => api.get<ApiResponse<PaginatedResult<Patient>>>('/patients', { params }),
-  getById:       (id: string)   => api.get<ApiResponse<Patient>>(`/patients/${id}`),
-  create:        (data: any)    => api.post<ApiResponse<Patient>>('/patients', data),
-  update:        (id: string, data: any) => api.put<ApiResponse<Patient>>(`/patients/${id}`, data),
-  delete:        (id: string)   => api.delete(`/patients/${id}`),
-  searchHistory: (params?: any) => api.get<ApiResponse<PaginatedResult<Patient>>>('/patients/history/search', { params }),
+  getAll:   (params?: { search?: string; page?: number; limit?: number }) =>
+              api.get<ApiResponse<{ patients: Patient[]; total: number; page: number; pages: number }>>('/patients', { params }),
+  getById:  (id: string) => api.get<ApiResponse<Patient>>(`/patients/${id}`),
+  create:   (data: Partial<Patient>) => api.post<ApiResponse<Patient>>('/patients', data),
+  update:   (id: string, data: Partial<Patient>) => api.put<ApiResponse<Patient>>(`/patients/${id}`, data),
+  delete:   (id: string) => api.delete<ApiResponse<null>>(`/patients/${id}`),
+  history:  (id: string) => api.get<ApiResponse<TestSession[]>>(`/patients/${id}/history`),
 }
 
 // ── Lab Tests ─────────────────────────────────────────────────────────────────
 export const labTestApi = {
-  getAll:       (params?: any) => api.get<ApiResponse<LabTest[]>>('/lab-tests', { params }),
-  getCategories:()             => api.get<ApiResponse<string[]>>('/lab-tests/categories'),
-  create:       (data: any)    => api.post<ApiResponse<LabTest>>('/lab-tests', data),
-  update:       (id: string, data: any) => api.put<ApiResponse<LabTest>>(`/lab-tests/${id}`, data),
-  deactivate:   (id: string)   => api.delete(`/lab-tests/${id}`),
-  seed:         ()             => api.post('/lab-tests/seed'),
+  getAll:  (params?: { search?: string; category?: string }) =>
+             api.get<ApiResponse<LabTest[]>>('/lab-tests', { params }),
+  create:  (data: Partial<LabTest>) => api.post<ApiResponse<LabTest>>('/lab-tests', data),
+  update:  (id: string, data: Partial<LabTest>) => api.put<ApiResponse<LabTest>>(`/lab-tests/${id}`, data),
+  delete:  (id: string) => api.delete<ApiResponse<null>>(`/lab-tests/${id}`),
+  seed:    () => api.post<ApiResponse<null>>('/lab-tests/seed'),
 }
 
-// ── Test Sessions ─────────────────────────────────────────────────────────────
+// ── Sessions ──────────────────────────────────────────────────────────────────
 export const sessionApi = {
-  getAll:       (params?: any) => api.get<ApiResponse<PaginatedResult<TestSession>>>('/sessions', { params }),
-  getById:      (id: string)   => api.get<ApiResponse<TestSession>>(`/sessions/${id}`),
-  getByPatient: (patientId: string) => api.get<ApiResponse<TestSession[]>>(`/sessions/patient/${patientId}`),
-  create:       (data: any)    => api.post<ApiResponse<TestSession>>('/sessions', data),
-  delete:       (id: string)   => api.delete(`/sessions/${id}`),
-  addTests:     (id: string, tests: any[]) => api.post<ApiResponse<TestSession>>(`/sessions/${id}/tests`, { tests }),
+  getAll:       (params?: { status?: string; patientId?: string; page?: number; limit?: number }) =>
+                  api.get<ApiResponse<{ sessions: TestSession[]; total: number; page: number; pages: number }>>('/sessions', { params }),
+  getById:      (id: string) => api.get<ApiResponse<TestSession>>(`/sessions/${id}`),
+  create:       (data: any)  => api.post<ApiResponse<TestSession>>('/sessions', data),
+  addTests:     (id: string, data: any) => api.post<ApiResponse<TestSession>>(`/sessions/${id}/tests`, data),
   removeTest:   (id: string, testId: string) => api.delete<ApiResponse<TestSession>>(`/sessions/${id}/tests/${testId}`),
   updateTest:   (id: string, testId: string, data: any) => api.put<ApiResponse<TestSession>>(`/sessions/${id}/tests/${testId}`, data),
   addResult:    (id: string, data: any) => api.post<ApiResponse<TestSession>>(`/sessions/${id}/results`, data),
   updateStatus: (id: string, status: string) => api.put<ApiResponse<TestSession>>(`/sessions/${id}/status`, { status }),
-  generatePdf:  (id: string)   => api.post(`/sessions/${id}/pdf`, {}, { responseType: 'blob' }),
+  delete:       (id: string) => api.delete<ApiResponse<null>>(`/sessions/${id}`),
+  // responseType 'blob' handles both streamed PDF and JSON error responses
+  generatePdf:  (id: string) => api.post(`/sessions/${id}/pdf`, {}, { responseType: 'blob' }),
+}
+
+// ── Dashboard ─────────────────────────────────────────────────────────────────
+export const dashboardApi = {
+  getStats: () => api.get<ApiResponse<DashboardStats>>('/dashboard/stats'),
 }
